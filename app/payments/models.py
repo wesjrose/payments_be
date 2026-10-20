@@ -17,6 +17,8 @@ class CheckoutSnapshot(SQLModel, table=True):
 class PaymentIntent(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     payment_intent_id: str = Field(max_length=100)
+    amount: int
+    currency: str
     checkout_snapshot_id: uuid.UUID = Field(
         foreign_key="checkoutsnapshot.id", unique=True, ondelete="CASCADE"
     )
