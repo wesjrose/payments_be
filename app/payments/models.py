@@ -1,6 +1,9 @@
-from sqlmodel import SQLModel, Field, Relationship
-from sqlalchemy import JSON
+from app.helpers import utcnow
 
+from sqlmodel import SQLModel, Field, Relationship
+from sqlalchemy import JSON, DateTime, func
+
+from datetime import datetime
 from typing import Any, Optional
 import uuid
 
@@ -11,6 +14,17 @@ class CheckoutSnapshot(SQLModel, table=True):
     data: dict[str, Any] = Field(default_factory=dict, sa_type=JSON)
     payment_intent: Optional["PaymentIntent"] = Relationship(
         back_populates="checkout_snapshot", sa_relationship_kwargs={"uselist": False}
+    )
+    currency: str
+    created_at: datetime = Field(
+        default_factory=utcnow,
+        sa_type=DateTime(timezone=True),
+        sa_column_kwargs={"server_default": func.now()},
+    )
+    updated_at: datetime = Field(
+        default_factory=utcnow,
+        sa_type=DateTime(timezone=True),
+        sa_column_kwargs={"server_default": func.now(), "onupdate": utcnow},
     )
 
 
