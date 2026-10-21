@@ -10,7 +10,9 @@ import uuid
 
 class CheckoutSnapshot(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    amount: int
+    subtotal: int
+    total: int
+    tax: int
     data: dict[str, Any] = Field(default_factory=dict, sa_type=JSON)
     payment_intent: Optional["PaymentIntent"] = Relationship(
         back_populates="checkout_snapshot", sa_relationship_kwargs={"uselist": False}

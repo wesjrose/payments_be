@@ -13,7 +13,7 @@ def get_stripe_client() -> StripeClient:
     return StripeClient(os.getenv("STRIPE_API_KEY"))
 
 
-class StripePaymentHandler(PaymentHandler):
+class StripeService(PaymentHandler):
 
     def __init__(self, stripe_client: StripeClient, session: SessionDep):
         self.stripe_client = stripe_client
@@ -25,6 +25,7 @@ class StripePaymentHandler(PaymentHandler):
         the items/purchases that the user wants to make when they checkout.
         """
         pi = self.stripe_client.v1.payment_intents.create(
-            {"amount": checkout_snapshot.amount, "currency": checkout_snapshot.currency}
+            {"amount": checkout_snapshot.total, "currency": checkout_snapshot.currency}
         )
         print(f"The payment intent generated is: {pi}")
+        return pi.client_secret
