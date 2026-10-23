@@ -1,8 +1,9 @@
 from stripe import StripeClient
 
-from app.payments.models import CheckoutSnapshot
+from app.payments.models import CheckoutSnapshot, PaymentIntentStatus, PaymentIntent
 from app.payments.payment_service import PaymentHandler
 from app.database import SessionDep
+from app.helpers import get_or_create
 
 from functools import lru_cache
 import os
@@ -25,7 +26,34 @@ class StripeService(PaymentHandler):
         the items/purchases that the user wants to make when they checkout.
         """
         pi = self.stripe_client.v1.payment_intents.create(
-            {"amount": checkout_snapshot.total, "currency": checkout_snapshot.currency}
+            {
+                "amount": checkout_snapshot.total,
+                "currency": checkout_snapshot.currency,
+            },
+            {"idempotency_key": str(checkout_snapshot.id)},
         )
-        print(f"The payment intent generated is: {pi}")
+
+        # creating the payment intent
+        local_pi = PaymentIntent(
+            payment_intent_id=pi.id,
+            amount=checkout_snapshot.total,
+            currency=checkout_snapshot.currency,
+            checkout_snapshot_id=checkout_snapshot.id,
+            status=PaymentIntentStatus.CREATED,
+        )
+        local_pi, _ = get_or_create(
+            self.session,
+            PaymentIntent,
+            defaults={
+                "payment_indent_id": pi.id,
+                "amount": checkout_snapshot.total,
+                "currency": checkout_snapshot.currency,
+                "status": PaymentIntentStatus.CREATED,
+            },
+            checkout_snapshot_id=checkout_snapshot.id,
+        )
+
+        self.session.add(local_pi)
+        self.session.commit()
+
         return pi.client_secret

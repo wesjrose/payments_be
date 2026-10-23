@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 from app.database import SessionDep
 
 from app.payments.models import CheckoutSnapshot
 from app.payments.service import get_payment_service
+from app.helpers import get_or_create
 
 import uuid
 
@@ -33,18 +34,28 @@ def get_checkout_info(session: SessionDep):
 
 
 @router.post("/checkout-snapshot")
-def get_checkout_snapshot(session: SessionDep):
-    new_checkout_snap = CheckoutSnapshot(
-        total=cart["amount"],
-        subtotal=cart["subtotal"],
-        data=cart["data"],
-        currency=cart["currency"],
-        tax=cart["tax"],
+def create_checkout_snapshot(session: SessionDep, request: Request):
+
+    idempotency_key = request.headers.get("Idempotency-Key")
+    if not idempotency_key:
+        raise HTTPException(
+            status_code=400, detail="Idempotency-Key header is required"
+        )
+
+    snapshot, created = get_or_create(
+        session,
+        CheckoutSnapshot,
+        idempotency_key=idempotency_key,
+        defaults={
+            "total": cart["amount"],
+            "subtotal": cart["subtotal"],
+            "data": cart["data"],
+            "currency": cart["currency"],
+            "tax": cart["tax"],
+        },
     )
-    session.add(new_checkout_snap)
-    session.commit()
-    session.refresh(new_checkout_snap)
-    return new_checkout_snap
+
+    return snapshot
 
 
 @router.get("/initiate-payment/{checkout_snapshot_id}")

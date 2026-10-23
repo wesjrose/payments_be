@@ -3,6 +3,7 @@ from app.helpers import utcnow
 from sqlmodel import SQLModel, Field, Relationship
 from sqlalchemy import JSON, DateTime, func
 
+from enum import StrEnum
 from datetime import datetime
 from typing import Any, Optional
 import uuid
@@ -28,6 +29,15 @@ class CheckoutSnapshot(SQLModel, table=True):
         sa_type=DateTime(timezone=True),
         sa_column_kwargs={"server_default": func.now(), "onupdate": utcnow},
     )
+    idempotency_key: str = Field(max_length=100)
+
+
+class PaymentIntentStatus(StrEnum):
+    CREATED = "created"
+    PROCESSING = "processing"
+    SUCCEEDED = "succeeded"
+    CANCELED = "canceled"
+    FAILED = "failed"
 
 
 class PaymentIntent(SQLModel, table=True):
@@ -39,3 +49,4 @@ class PaymentIntent(SQLModel, table=True):
         foreign_key="checkoutsnapshot.id", unique=True, ondelete="CASCADE"
     )
     checkout_snapshot: CheckoutSnapshot = Relationship(back_populates="payment_intent")
+    status: PaymentIntentStatus = Field()
