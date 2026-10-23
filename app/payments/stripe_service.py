@@ -6,6 +6,7 @@ from app.payments.models import CheckoutSnapshot, PaymentIntentStatus, PaymentIn
 from app.payments.payment_service import PaymentHandler
 from app.database import SessionDep
 from app.helpers import get_or_create
+from app.logging_config import get_logger
 
 from functools import lru_cache
 import os, json
@@ -14,6 +15,9 @@ import os, json
 @lru_cache
 def get_stripe_client() -> stripe.StripeClient:
     return stripe.StripeClient(os.getenv("STRIPE_API_KEY"))
+
+
+logger = get_logger(__name__)
 
 
 class StripeService(PaymentHandler):
@@ -61,22 +65,27 @@ class StripeService(PaymentHandler):
 
         return pi.client_secret
 
-    def _verify_webhook_message(self, payload: dict, request: Request) -> stripe.Event:
+    def _verify_webhook_message(self, payload: dict, headers: dict) -> stripe.Event:
 
-        endpoint_secret = os.getenv("STRIPE_WEBHOOK_SERCRET")
+        endpoint_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
 
-        sig_header = request.headers.get("stripe-signature")
+        sig_header = headers.get("stripe-signature")
         event = None
         try:
             event = self.stripe_client.construct_event(
                 payload, sig_header, endpoint_secret
             )
         except stripe.error.SignatureVerificationError as e:
+            logger.warning(
+                "Stripe webhook signature failed authentication",
+                extra=dict(headers.headers)
+                | {"endpoint secret": endpoint_secret, "payload_type": type(payload)},
+            )
+
             raise HTTPException(status_code=400, detail="Invalid request")
 
         return event
 
-    def ingest_webhook_messages(self, request: Request):
-        payload = request.body
+    def ingest_webhook_messages(self, payload: bytes, headers: dict):
 
-        event = self._verify_webhook_message(payload, request)
+        event = self._verify_webhook_message(payload, headers)

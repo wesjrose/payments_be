@@ -88,9 +88,12 @@ def initiate_payment(checkout_snapshot_id: uuid.UUID, session: SessionDep):
 
 
 @router.post("/stripe/webhooks")
-def handle_webhooks(session: SessionDep, request: Request):
+async def handle_webhooks(session: SessionDep, request: Request):
+
+    payload = await request.body()
+    headers = dict(request.headers)
 
     payment_service = get_payment_service(session)
-    payment_service.ingest_webhook_messages(request)
+    payment_service.ingest_webhook_messages(payload, headers)
 
     return {"message": "hello world"}
