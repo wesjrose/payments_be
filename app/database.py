@@ -3,11 +3,8 @@ from fastapi import Depends
 from sqlmodel import Session, create_engine
 from sqlalchemy import JSON, URL
 
-from dotenv import load_dotenv
 from typing import Annotated
 import os
-
-load_dotenv()
 
 DATABASE_HOST = os.getenv("DATABASE_HOST")
 DATABASE_USER = os.getenv("DATABASE_USER")
@@ -22,7 +19,7 @@ DATABASE_URL = URL.create(
     port=int(os.environ.get("DATABASE_PORT", 5432)),
     database=os.environ["DATABASE_NAME"],
 )
-engine = create_engine(DATABASE_URL, echo=True)
+engine = create_engine(DATABASE_URL, echo=False)
 
 
 def get_session():

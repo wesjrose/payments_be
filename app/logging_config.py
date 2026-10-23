@@ -11,9 +11,12 @@ from fastapi import Request
 request_id_var: ContextVar[str] = ContextVar("request_id", default="-")
 
 # Attributes present on every LogRecord; anything else came from `extra=`
-_RESERVED_ATTRS = set(
-    vars(logging.LogRecord("", 0, "", 0, "", (), None))
-) | {"message", "asctime", "request_id", "taskName"}
+_RESERVED_ATTRS = set(vars(logging.LogRecord("", 0, "", 0, "", (), None))) | {
+    "message",
+    "asctime",
+    "request_id",
+    "taskName",
+}
 
 
 def _extra_fields(record: logging.LogRecord) -> dict:
@@ -43,7 +46,7 @@ class JsonFormatter(logging.Formatter):
         if record.exc_info:
             log["exception"] = self.formatException(record.exc_info)
 
-        return json.dumps(log, default=str)
+        return json.dumps(log, default=str, indent=2)
 
 
 class TextFormatter(logging.Formatter):
@@ -67,9 +70,12 @@ def configure_logging():
     Configures logging for the whole app. Controlled by:
       LOG_LEVEL  - DEBUG, INFO, WARNING, ... (default INFO)
       LOG_FORMAT - "json" or "text" (default text)
+      LOG_FILE   - path of the log file (default logs/app.log), rotated at 10MB
     """
     level = os.getenv("LOG_LEVEL", "INFO").upper()
     formatter = "json" if os.getenv("LOG_FORMAT", "text").lower() == "json" else "text"
+    log_file = os.getenv("LOG_FILE", "logs/app.log")
+    os.makedirs(os.path.dirname(log_file) or ".", exist_ok=True)
 
     logging.config.dictConfig(
         {
@@ -85,15 +91,33 @@ def configure_logging():
                     "class": "logging.StreamHandler",
                     "formatter": formatter,
                     "filters": ["request_id"],
+                    # enforce LOG_LEVEL here too: libraries that set their own
+                    # logger level (e.g. SQLAlchemy echo) bypass the root level
+                    "level": level,
+                },
+                "file": {
+                    "class": "logging.handlers.RotatingFileHandler",
+                    "filename": log_file,
+                    "maxBytes": 10 * 1024 * 1024,
+                    "backupCount": 5,
+                    "encoding": "utf-8",
+                    "formatter": formatter,
+                    "filters": ["request_id"],
+                    # enforce LOG_LEVEL here too: libraries that set their own
+                    # logger level (e.g. SQLAlchemy echo) bypass the root level
+                    "level": level,
                 },
             },
-            "root": {"handlers": ["console"], "level": level},
+            "root": {"handlers": ["console", "file"], "level": level},
             "loggers": {
                 # route uvicorn through our handler so all output is consistent
                 "uvicorn": {"handlers": [], "propagate": True},
                 "uvicorn.error": {"handlers": [], "propagate": True},
                 # request_logging_middleware replaces uvicorn's access log
                 "uvicorn.access": {"handlers": [], "propagate": False},
+                # the dev reloader logs every file change at INFO, including writes
+                # to our own log file, which creates an endless feedback loop
+                "watchfiles": {"level": "WARNING"},
             },
         }
     )

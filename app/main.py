@@ -1,6 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from dotenv import load_dotenv
+
+load_dotenv()  # must run before configure_logging() so LOG_* settings apply
+
 from app.logging_config import configure_logging, request_logging_middleware
 
 configure_logging()
