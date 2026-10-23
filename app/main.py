@@ -1,6 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.logging_config import configure_logging, request_logging_middleware
+
+configure_logging()
+
 from app.database import engine
 from app.payments.router import router as payments_router
 
@@ -30,6 +34,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.middleware("http")(request_logging_middleware)
 
 app.include_router(payments_router)
 

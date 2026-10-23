@@ -5,8 +5,11 @@ from app.database import SessionDep
 from app.payments.models import CheckoutSnapshot
 from app.payments.service import get_payment_service
 from app.helpers import get_or_create
+from app.logging_config import get_logger
 
 import uuid
+
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/payments", tags=["payments"])
 
@@ -65,10 +68,17 @@ def initiate_payment(checkout_snapshot_id: uuid.UUID, session: SessionDep):
     user based on their checkout snapshot
     """
 
-    print(f"The ID is: {checkout_snapshot_id}")
+    logger.info(
+        "Initiating payment",
+        extra={"checkout_snapshot_id": str(checkout_snapshot_id)},
+    )
     snapshot = session.get(CheckoutSnapshot, checkout_snapshot_id)
 
     if snapshot is None:
+        logger.warning(
+            "Checkout snapshot not found",
+            extra={"checkout_snapshot_id": str(checkout_snapshot_id)},
+        )
         raise HTTPException(status_code=404, detail="Checkout snapshot not found")
 
     payment_service = get_payment_service(session)
