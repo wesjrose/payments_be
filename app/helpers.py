@@ -1,7 +1,9 @@
 from sqlmodel import select, Session
 from sqlalchemy.exc import IntegrityError
-
 from datetime import datetime, timezone
+from functools import lru_cache
+
+import boto3, os
 
 
 def utcnow() -> datetime:
@@ -24,3 +26,8 @@ def get_or_create(session: Session, model, defaults: dict | None = None, **looku
 
     session.refresh(instance)
     return instance, True
+
+
+@lru_cache
+def get_sqs_client():
+    return boto3.client("sqs", region_name=os.getenv("AWS_REGION"))

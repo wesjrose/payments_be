@@ -20,16 +20,23 @@ Interactive docs: http://127.0.0.1:8000/docs
 
 ## Endpoints
 
-| Method | Path              | Description           |
-|--------|-------------------|-----------------------|
-| GET    | `/health`         | Health check          |
-| GET    | `/items`          | List all items        |
-| GET    | `/items/{id}`     | Get one item          |
-| POST   | `/items`          | Create an item        |
-| POST   | `/example`        | Echo posted data      |
+| Method | Path          | Description      |
+| ------ | ------------- | ---------------- |
+| GET    | `/health`     | Health check     |
+| GET    | `/items`      | List all items   |
+| GET    | `/items/{id}` | Get one item     |
+| POST   | `/items`      | Create an item   |
+| POST   | `/example`    | Echo posted data |
 
 ## Test
 
 ```bash
 pytest
 ```
+
+
+## Stripe Info
+How to launch stripe for local webhook calls:<br>
+`
+stripe listen --all-snapshot --forward-to localhost:8000/payments/stripe/webhooks
+`
