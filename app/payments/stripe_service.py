@@ -90,23 +90,25 @@ class StripeService(PaymentHandler):
 
         sqs_client = get_sqs_client()
         sqs_client.send_message(
-            QueueUrl=os.getenv("WEBHOOK_PAYMENT_MESSAGE_QUEUE"),
-            MessageBody={
-                "messageId": "19dd0b57-b21e-4ac1-bd88-01bbb068cb78",
-                "receiptHandle": "MessageReceiptHandle-1",
-                "body": "Test message-1",
-                "attributes": {
-                    "ApproximateReceiveCount": "1",
-                    "SentTimestamp": "1523232000000",
-                    "SenderId": "123456789012",
-                    "ApproximateFirstReceiveTimestamp": "1523232000001",
+            QueueUrl=os.getenv("PAYMENT_MESSAGE_QUEUE"),
+            MessageBody=str(
+                {
+                    "messageId": "19dd0b57-b21e-4ac1-bd88-01bbb068cb78",
+                    "receiptHandle": "MessageReceiptHandle-1",
+                    "body": "Hello world from payments",
+                    "attributes": {
+                        "ApproximateReceiveCount": "1",
+                        "SentTimestamp": "1523232000000",
+                        "SenderId": "123456789012",
+                        "ApproximateFirstReceiveTimestamp": "1523232000001",
+                    },
+                    "messageAttributes": {},
+                    "md5OfBody": "7b270e59b47ff90a553787216d55d91d",
+                    "eventSource": "aws:sqs",
+                    "eventSourceARN": "arn:aws:sqs:us-east-1:123456789012:MyQueue",
+                    "awsRegion": "us-east-1",
                 },
-                "messageAttributes": {},
-                "md5OfBody": "7b270e59b47ff90a553787216d55d91d",
-                "eventSource": "aws:sqs",
-                "eventSourceARN": "arn:aws:sqs:us-east-1:123456789012:MyQueue",
-                "awsRegion": "us-east-1",
-            },
+            ),
             MessageAttributes={
                 "event_type": {"DataType": "String", "StringValue": event.type},
                 "event_id": {"DataType": "String", "StringValue": event.id},

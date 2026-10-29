@@ -87,7 +87,7 @@ def initiate_payment(checkout_snapshot_id: uuid.UUID, session: SessionDep):
     return client_secret
 
 
-@router.post("/webhooks")
+@router.post("/stripe/webhooks")
 async def handle_webhooks(session: SessionDep, request: Request):
 
     payload = await request.body()
